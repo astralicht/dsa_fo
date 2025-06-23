@@ -4,62 +4,163 @@
 #include <fstream>
 #include <sstream>
 #include <bits/stdc++.h>
+#include <conio.h>
 
 using namespace std;
 
 struct Account {
-	string num, fname, mname, lname;
+	string accNum, cardNum, atmPIN, fname, mname, lname;
 	float bal;
 };
 
-string progLoop(); // main program loop; put in main func
-string genAccNum ();
-void memLoad(map<string, Account>* accs);
-void memSave(map<string, Account>* accs);
-void readCSVToMap(string filename, map<string, Account>* accs);
+void progLoop(); // main program loop; put in main func
+void memLoad(string filename, string tableName);
+void memSave(string filename, string tableName);
+
+void checkBalScreen();
+void withdrawScreen();
+void activateATMCardScreen();
+Account fetchAccount(string cardNum, string pin);
+string genAccNum();
+
+map<string, Account> accs;
 
 int main() {
-	map<string, Account> accs;
-	
-	memLoad(&accs);
-	
-	Account acc = accs["111"];
-	
-	cout << acc.fname << endl;
+	memLoad("accounts.csv", "accounts");
+	progLoop();
+//	memSave("csv\accounts.csv", "accounts");
 }
 
-void memLoad(map<string, Account>* accs) {
-    // read from file code here
-	readCSVToMap("accounts.csv", accs);
+void progLoop() {
+	char inp;
+	
+	while(true) {
+		system("cls");
+		cout << "=====           Three Blind Mice Bank           =====\n";
+		cout << "=====                    ATM                    =====\n";
+		cout << "\n               Press any key to start.\n";
+		_getch();
+		
+		while(true) {
+			system("cls");
+			cout << "=====           Three Blind Mice Bank           =====\n";
+			cout << "=====                    ATM                    =====\n";
+			cout << "[1] Check Balance\n";
+			cout << "[2] Withdraw\n";
+			cout << "[3] Activate ATM Card\n";
+			cout << "[0] Cancel\n";
+			inp = _getch();
+			
+			system("cls");
+			
+			if (inp == '1') {
+				checkBalScreen();
+			} else if (inp == '2') {
+				withdrawScreen();
+			} else if (inp == '3') {
+				activateATMCardScreen();
+			} else if (inp == '0') {
+				break;
+			} else {
+				continue;
+			}
+		}
+	}
 }
 
-void memSave(map<string, Account>* accs) {
-    // write to file code here
-    
-    // use this for loop iterator
-    for (map<string, Account>::iterator itr = accs->begin(); itr != accs->end(); itr++) {
-        cout << "Saving " << itr->first << "...\n";
-    }
-}
-
-void readCSVToMap(string filename, map<string, Account>* accs) {
-	string line, str, num;
-	ifstream CSV(filename);
+void checkBalScreen() {
+	char inp;
+	string cardNum;
+	string pin;
 	Account acc;
-	string bal;
+		
+	while(true) {
+		system("cls");
+		cout << "=====           Three Blind Mice Bank           =====\n";
+		cout << "=====                    ATM                    =====\n";
+		cout << "Enter Card Number > ";
+		cin >> cardNum;
+		cout << "Enter PIN > ";
+		cin >> pin;
+		
+		acc = fetchAccount(cardNum, pin);
+		
+		while (acc.atmPIN != pin) {
+			system("cls");
+			cout << "=====           Three Blind Mice Bank           =====\n";
+			cout << "=====                    ATM                    =====\n";
+			cout << "Incorrect PIN. Please try again.";
+			cout << "Enter PIN > ";
+			cin >> pin;
+		}
+		
+		while (true) {
+			system("cls");
+			cout << "=====           Three Blind Mice Bank           =====\n";
+			cout << "=====                    ATM                    =====\n";
+			cout << "Your balance is: Php " << acc.bal << endl;
+			cout << "Press enter to return to main menu.";
+			_getch();
+			return;
+		}
+	}
+}
+
+void withdrawScreen() {
+	// enter code here
+}
+
+void activateATMCardScreen() {
+	// enter code here
+}
+
+void memLoad(string filename, string tableName) {
+	string line, str, accNum;
+	ifstream CSV(filename);
 	
-	while (getline(CSV, num, ',')) {
-		acc = Account();
-		acc.num = num;
-		getline(CSV, acc.fname, ',');
-		getline(CSV, acc.mname, ',');
-		getline(CSV, acc.lname, ',');
-		getline(CSV, bal);
-		acc.bal = stof(bal);
-		accs->insert(make_pair(num, acc));
-		num = "";
-		bal = "";
+	if (tableName == "accounts") {
+		Account acc;
+		string bal;
+		
+		while (getline(CSV, accNum, ',')) {
+			acc = Account();
+			acc.accNum = accNum;
+			getline(CSV, acc.cardNum, ',');
+			getline(CSV, acc.atmPIN, ',');
+			getline(CSV, acc.fname, ',');
+			getline(CSV, acc.mname, ',');
+			getline(CSV, acc.lname, ',');
+			getline(CSV, bal);
+			acc.bal = stof(bal);
+			accs.insert(make_pair(accNum, acc));
+			accNum = "";
+			bal = "";
+		}
 	}
 	
 	CSV.close();
 }
+
+void memSave(string filename, string tableName) {
+    // write to file code here
+    
+    // use this for loop iterator
+    for (map<string, Account>::iterator itr = accs.begin(); itr != accs.end(); itr++) {
+        cout << "Saving " << itr->first << "...\n";
+    }
+}
+
+Account fetchAccount(string cardNum, string atmPIN) {
+	Account acc;
+	for (map<string, Account>::iterator itr = accs.begin(); itr != accs.end(); itr++) {
+        if (itr->second.cardNum == cardNum) {
+        	acc = itr->second;
+		}
+    }
+    return acc;
+}
+
+string genAccNum() {
+	// code here to generate account number for new customer
+}
+

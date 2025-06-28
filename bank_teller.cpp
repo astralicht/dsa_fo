@@ -3,7 +3,6 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <conio.h>
 
 using namespace std;
 
@@ -51,7 +50,7 @@ void progLoop() {
 		cout << "=====           Three Blind Mice Bank           =====\n";
 		cout << "=====                    ATM                    =====\n";
 		cout << "\n               Press any key to start.\n";
-		_getch();
+		cin.get();
 		
 		while(true) {
 			system("cls");
@@ -61,7 +60,7 @@ void progLoop() {
 			cout << "[2] Withdraw\n";
 			cout << "[3] Activate ATM Card\n";
 			cout << "[0] Cancel\n";
-			inp = _getch();
+			inp = cin.get();
 			
 			system("cls");
 			

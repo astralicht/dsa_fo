@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <conio.h>
 
 using namespace std;
 
@@ -25,10 +26,10 @@ void progLoop(); // main program loop; put in main func
 void memLoad(string filename, string tableName);
 void memSave(string filename, string tableName);
 
-void checkBalScreen();
-void withdrawScreen();
-void activateATMCardScreen();
-Account fetchAccount(string cardNum, string pin);
+void header();
+void viewAccount();
+
+Account fetchAccount(string accNum);
 string genAccNum();
 
 map<string, Customer> css;
@@ -47,31 +48,22 @@ void progLoop() {
 	
 	while(true) {
 		system("cls");
-		cout << "=====           Three Blind Mice Bank           =====\n";
-		cout << "=====                    ATM                    =====\n";
-		cout << "\n               Press any key to start.\n";
-		cin.get();
+		header();
+		cout << "\nPress any key to start.\n";
+		_getch();
 		
 		while(true) {
 			system("cls");
-			cout << "=====           Three Blind Mice Bank           =====\n";
-			cout << "=====                    ATM                    =====\n";
-			cout << "[1] Check Balance\n";
-			cout << "[2] Withdraw\n";
-			cout << "[3] Activate ATM Card\n";
+			header();
+			cout << "[1] View Account\n";
+			cout << "[2] Open New Account\n";
 			cout << "[0] Cancel\n";
-			inp = cin.get();
+			inp = _getch();
 			
 			system("cls");
 			
 			if (inp == '1') {
-				checkBalScreen();
-			} else if (inp == '2') {
-				withdrawScreen();
-			} else if (inp == '3') {
-				activateATMCardScreen();
-			} else if (inp == '0') {
-				break;
+				viewAccount();
 			} else {
 				continue;
 			}
@@ -79,45 +71,36 @@ void progLoop() {
 	}
 }
 
-void checkBalScreen() {
-//	char inp;
-//	Account acc;
-//		
-//	while(true) {
-//		system("cls");
-//		cout << "=====           Three Blind Mice Bank           =====\n";
-//		cout << "Enter Card Number > ";
-//		cin >> cardNum;
-//		cout << "Enter PIN > ";
-//		cin >> pin;
-//		
-//		acc = fetchAccount(cardNum, pin);
-//		
-//		while (acc.atmPIN != pin) {
-//			system("cls");
-//			cout << "=====           Three Blind Mice Bank           =====\n";
-//			cout << "Incorrect PIN. Please try again.";
-//			cout << "Enter PIN > ";
-//			cin >> pin;
-//		}
-//		
-//		while (true) {
-//			system("cls");
-//			cout << "=====           Three Blind Mice Bank           =====\n";
-//			cout << "Your balance is: Php " << acc.bal << endl;
-//			cout << "Press enter to return to main menu.";
-//			_getch();
-//			return;
-//		}
-//	}
+void header() {
+	cout << "=====           Three Blind Mice Bank           =====\n";
 }
 
-void withdrawScreen() {
-	// enter code here
-}
-
-void activateATMCardScreen() {
-	// enter code here
+void viewAccount() {
+	string input;
+	Account acc;
+	
+	while (true) {
+		system("cls");
+		header();
+		cout << "Enter account number";
+		cout << "> ";
+		cin >> input;
+		acc = fetchAccount(input);
+		
+		if (acc.accNum == "") {
+			cout << "\nAccount not found.\nPress any key to try again.\n";
+			_getch();
+			continue;
+		} else {
+			break;
+		}
+	}
+	
+	while (true) {
+		system("cls");
+		header();
+		
+	}
 }
 
 void memLoad(string filepath, string tableName) {
@@ -169,16 +152,14 @@ void memLoad(string filepath, string tableName) {
 //    }
 //}
 
-//Account fetchAccount(string cardNum, string atmPIN) {
-//	Account acc;
-//	for (map<string, Account>::iterator itr = accs.begin(); itr != accs.end(); itr++) {
-//        if (itr->second.cardNum == cardNum) {
-//        	acc = itr->second;
-//		}
-//    }
-//    return acc;
-//}
-//
+Account fetchAccount(string accNum) {
+	for (map<string, Account>::iterator itr = acs.begin(); itr != acs.end(); itr++) {
+        if (itr->second.accNum == accNum) {
+        	return itr->second;
+		}
+    }
+}
+
 //string genAccNum() {
 //	// code here to generate account number for new customer
 //}

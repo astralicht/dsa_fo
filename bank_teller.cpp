@@ -23,6 +23,9 @@ Ricoh Ng
 #include <string>   
 #include <iomanip>  
 #include <ranges>
+#include <ctime>
+#include <cstdlib>
+#include <chrono>
 
 #define ASCII_ESC 27
 #define ASCII_ENTER 13
@@ -68,6 +71,8 @@ int main() {
 }
 
 void progLoop() {
+	srand(time(0));
+	
 	char inp;
 	string accNumInput;
 	
@@ -108,6 +113,9 @@ void viewAccount(Account acc) {
 	Customer cus = css[acc.cusNum];
 	char inp;
 	
+	refreshAccBal(acc.accNum);
+	// refresh account transactions
+	
 	while (true) {
 		system("cls");
 		header();
@@ -118,42 +126,62 @@ void viewAccount(Account acc) {
 		cout << "Php " << fixed << setprecision(2) << acc.balance << endl;
 		cout << "\nMost Recent Transactions\n";
 		printRecentTransactions(10, acc.accNum);
-		cout << "Options\n";
+		cout << "\nOptions\n";
 		cout << "---------------\n";
-		cout << "1. Refresh Balance";
+		cout << "1. Deposit\n";
+		cout << "2. Withdraw\n";
+		cout << "3. Bank Transfer\n";
 		cout << "ESC to exit account";
 		inp = _getch();
 		if (inp == ASCII_ESC) break;
-		switch(inp) {
-			case 1:
-				refreshAccBal(acc.accNum);
-			default:
-				continue;
-		}
 	}
 }
 
 Account fetchAccount(string accNum) {
-	if (acs.count(accNum)) {
-		return acs[accNum];
-	}
-	return Account(); 
+	if (acs.count(accNum)) return acs[accNum];
+	else return Account(); 
 }
 
 string genAccNum() {
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> distrib(100000, 999999); 
+	// account number format: YYYY00000000
+	char year_buffer[5];
+	while (true) {
+		const auto now = chrono::system_clock::now();
+		std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+		std::tm* p_tm = std::localtime(&now_c);
+		string year = to_string(strftime(year_buffer, sizeof(year_buffer), "%Y", p_tm));
+		string accNum = year + "-" + to_string((rand()%99999999 + 1));
+		
+		try {
+			acs.at(accNum);
+		} catch (const out_of_range& e) {
+			continue;
+		}
+		
+		return accNum;
+		break;
+	}
+}
 
-    string newAccNum;
-    bool unique = false;
-    while (!unique) {
-        newAccNum = to_string(distrib(gen));
-        if (acs.find(newAccNum) == acs.end()) {
-            unique = true;
-        }
-    }
-    return newAccNum;
+string genTransId() {
+	// account number format: YYYY00000000
+	char year_buffer[5];
+	while (true) {
+		const auto now = chrono::system_clock::now();
+		std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+		std::tm* p_tm = std::localtime(&now_c);
+		string year = to_string(strftime(year_buffer, sizeof(year_buffer), "%Y", p_tm));
+		string transId = year + "-" + to_string((rand()%99999999 + 1));
+		
+		try {
+			trs.at(transId);
+		} catch (const out_of_range& e) {
+			continue;
+		}
+		
+		return transId;
+		break;
+	}
 }
 
 void memSave(string filepath, string tableName) {
@@ -216,7 +244,6 @@ void memLoad(string filepath, string tableName) {
 	
 	if (tableName == "customers") {
 		Customer cus;
-		
 		while (getline(ifs, cusNum, ',')) {
 			cus = Customer();
 			cus.cusNum = cusNum;
@@ -229,7 +256,6 @@ void memLoad(string filepath, string tableName) {
 		}
 	} else if (tableName == "accounts") {
 		Account acc;
-		
 		while (getline(ifs, accNum, ',')) {
 			acc = Account();
 			acc.accNum = accNum;
@@ -240,7 +266,6 @@ void memLoad(string filepath, string tableName) {
 		}
 	} else if (tableName == "transactions") {
 		Transaction tr;
-		
 		while (getline(ifs, transId, ',')) {
 			tr = Transaction();
 			tr.transId = transId;
@@ -271,18 +296,17 @@ void printRecentTransactions(int count, string accNum) {
 }
 
 void refreshAccBal(string accNum) {
-    int i = 0;
     float bal = 0;
 	Transaction tr;
 	for (const auto& pair : trs | views::reverse) {
-		if (i == count) break;
-		
 		tr = pair.second;
 		if (tr.accNum == accNum) {
 			if (tr.type == "DEPOSIT" || tr.type == "BANK TRANSFER") bal += tr.amount;
 			else if (tr.type == "WITHDRAW") bal -= tr.amount;
 		}
-		
-		i++;
 	}
+	cout << bal << endl;
+	acs[accNum].balance = bal;
 }
+
+void

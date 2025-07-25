@@ -26,6 +26,7 @@ Ricoh Ng
 #include <ctime>
 #include <cstdlib>
 #include <chrono>
+#include <sstream>
 
 #define ASCII_ESC 27
 #define ASCII_ENTER 13
@@ -57,20 +58,28 @@ void viewAccount(Account acc);
 Account fetchAccount(string accNum);
 void printRecentTransactions(int count, string accNum);
 void refreshAccBal(string accNum);
+void depositAmtToAcc(float amt, string accNum);
+void withdrawAmtFromAcc(float amt, string accNum);
 
 map<string, Customer> css;
 map<string, Account> acs;
 map<string, Transaction> trs;
+map<string, int> glbl_ctrs;
 
 int main() {
 	memLoad("csv\\customers.csv", "customers");
 	memLoad("csv\\accounts.csv", "accounts");
 	memLoad("csv\\transactions.csv", "transactions");
+	memLoad("csv\\glbl_ctrs.csv", "global_counters");
+	
 	progLoop();
 	return 0;
 }
 
 void progLoop() {
+	cout << glbl_ctrs.at("TR");
+    return;
+    
 	srand(time(0));
 	
 	char inp;
@@ -78,7 +87,7 @@ void progLoop() {
 	
 	system("cls");
 	header();
-	cout << "Press any key to start...";
+	cout << "Press any key to start";
 	inp = _getch();
 	
 	while(true) {
@@ -93,8 +102,8 @@ void progLoop() {
 		if (acc.accNum == "") {
 			system("cls");
 			header();
-			cout << "Account not found!";
-			cout << "Press any key to continue...";
+			cout << "Account not found!\n";
+			cout << "Press any key to continue";
 			_getch();
 			continue;
 		}
@@ -107,14 +116,13 @@ void header() {
 	cout << "--------------------------------\n";
 	cout << "        BANKING SYSTEM         \n";
 	cout << "--------------------------------\n\n";
+	return;
 }
 
 void viewAccount(Account acc) {
 	Customer cus = css[acc.cusNum];
 	char inp;
-	
-	refreshAccBal(acc.accNum);
-	// refresh account transactions
+	string input;
 	
 	while (true) {
 		system("cls");
@@ -131,9 +139,67 @@ void viewAccount(Account acc) {
 		cout << "1. Deposit\n";
 		cout << "2. Withdraw\n";
 		cout << "3. Bank Transfer\n";
+		cout << "R. Refresh\n\n";
 		cout << "ESC to exit account";
 		inp = _getch();
 		if (inp == ASCII_ESC) break;
+		else if (inp == '1') {
+			while (true) {
+				system("cls");
+				header();
+				cout << "Deposit\n";
+				cout << "'000' to cancel\n";
+				cout << "Enter amount: ";
+				cin >> input;
+				if (input == "000") break;
+				
+				float amt = stof(input);
+				if (amt <= 0) {
+					cout << "\nAmount must be more than 0.\nPress any key to try again.\n";
+					_getch();
+					continue;
+				} else {
+					system("cls");
+					header();
+					depositAmtToAcc(amt, acc.accNum);
+					cout << "An amount of Php " << setprecision(2) << amt << " was successfully deposited into the account.\n";
+					cout << "Press any key to return to account menu";
+					_getch();
+					break;
+				}
+			}
+		} else if (tolower(inp) == '2') {
+			while (true) {
+				system("cls");
+				header();
+				cout << "Withdraw\n";
+				cout << "'000' to cancel\n";
+				cout << "Enter amount: ";
+				cin >> input;
+				if (input == "000") break;
+				
+				float amt = stof(input);
+				if (amt > acc.balance) {
+					cout << "\nAmount cannot be more than the available balance.\nPress any key to try again.\n";
+					_getch();
+					continue;
+				} else {
+					system("cls");
+					header();
+					withdrawAmtFromAcc(amt, acc.accNum);
+					cout << "An amount of Php " << setprecision(2) << amt << " was successfully withdrawn from the account.\n";
+					cout << "Press any key to return to account menu";
+					_getch();
+					break;
+				}
+			}
+		} else if (tolower(inp) == 'r') {
+			refreshAccBal(acc.accNum);
+			acc = acs[acc.accNum];
+		} else continue;
+		
+		refreshAccBal(acc.accNum);
+		acc = acs[acc.accNum];
 	}
 }
 
@@ -143,44 +209,48 @@ Account fetchAccount(string accNum) {
 }
 
 string genAccNum() {
-	// account number format: YYYY00000000
-	char year_buffer[5];
+	// account number format: AC-YYYY-00000000
 	while (true) {
 		const auto now = chrono::system_clock::now();
-		std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-		std::tm* p_tm = std::localtime(&now_c);
-		string year = to_string(strftime(year_buffer, sizeof(year_buffer), "%Y", p_tm));
-		string accNum = year + "-" + to_string((rand()%99999999 + 1));
+		time_t now_c = chrono::system_clock::to_time_t(now);
+		tm* ltm = localtime(&now_c);
+		string year = to_string(ltm->tm_year + 1900);
 		
-		try {
-			acs.at(accNum);
-		} catch (const out_of_range& e) {
-			continue;
-		}
+		ostringstream oss;
+		oss << right << setfill('0') << setw(8) << to_string(glbl_ctrs["AC"]);
 		
-		return accNum;
-		break;
-	}
-}
-
-string genTransId() {
-	// account number format: YYYY00000000
-	char year_buffer[5];
-	while (true) {
-		const auto now = chrono::system_clock::now();
-		std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-		std::tm* p_tm = std::localtime(&now_c);
-		string year = to_string(strftime(year_buffer, sizeof(year_buffer), "%Y", p_tm));
-		string transId = year + "-" + to_string((rand()%99999999 + 1));
+		string transId = "AC-" + year + "-" + oss.str();
 		
 		try {
 			trs.at(transId);
 		} catch (const out_of_range& e) {
-			continue;
+			glbl_ctrs["AC"]++;
+			memSave("csv\\glbl_ctrs.csv", "global_counters");
+			return transId;
 		}
+	}
+}
+
+string genTransId() {
+	// transaction id  number format: TR-YYYY-00000000
+	while (true) {
+		const auto now = chrono::system_clock::now();
+		std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+		std::tm* ltm = std::localtime(&now_c);
+		string year = to_string(ltm->tm_year + 1900);
 		
-		return transId;
-		break;
+		ostringstream oss;
+		oss << right << setfill('0') << setw(8) << to_string(glbl_ctrs["TR"]);
+		
+		string transId = "TR-" + year + "-" + oss.str();
+		
+		try {
+			trs.at(transId);
+		} catch (const out_of_range& e) {
+			glbl_ctrs["TR"]++;
+			memSave("csv\\glbl_ctrs.csv", "global_counters");
+			return transId;
+		}
 	}
 }
 
@@ -223,16 +293,21 @@ void memSave(string filepath, string tableName) {
                 << tr.type << ","
                 << fixed << setprecision(2) << tr.amount << "\n";
         }
+    } else if (tableName == "glbl_ctrs") {
+        for (const auto& pair : glbl_ctrs) {
+            ofs << pair.first << "," << pair.second << "\n";
+        }
     }
     ofs.close();
+    return;
 }
 
 
-void memLoad(string filepath, string tableName) {
+void memLoad(string filepath, string mapName) {
 	string line, str, cusNum, accNum, transId, balance, amountStr; 
 	ifstream ifs(filepath);
 	
-	if (!ifs) {
+	if (!ifs.is_open()) {
 		system("cls");
 		header();
 		cout << "System error!\n";
@@ -242,7 +317,7 @@ void memLoad(string filepath, string tableName) {
 		exit(0);
 	}
 	
-	if (tableName == "customers") {
+	if (mapName == "customers") {
 		Customer cus;
 		while (getline(ifs, cusNum, ',')) {
 			cus = Customer();
@@ -254,7 +329,7 @@ void memLoad(string filepath, string tableName) {
 			getline(ifs, cus.email);
 			css[cusNum] = cus;
 		}
-	} else if (tableName == "accounts") {
+	} else if (mapName == "accounts") {
 		Account acc;
 		while (getline(ifs, accNum, ',')) {
 			acc = Account();
@@ -264,7 +339,7 @@ void memLoad(string filepath, string tableName) {
 			acc.balance = stof(balance);
 			acs[accNum] = acc;
 		}
-	} else if (tableName == "transactions") {
+	} else if (mapName == "transactions") {
 		Transaction tr;
 		while (getline(ifs, transId, ',')) {
 			tr = Transaction();
@@ -276,8 +351,15 @@ void memLoad(string filepath, string tableName) {
 			tr.amount = stof(amountStr); 
 			trs[transId] = tr;
 		}
+	} else if (mapName == "global_counters") {
+		string code, c;
+		while (getline(ifs, code, ',')) {
+			getline(ifs, c, ',');
+			glbl_ctrs[code] = stoi(c);
+		}
 	}
 	ifs.close();
+	return;
 }
 
 void printRecentTransactions(int count, string accNum) {
@@ -293,6 +375,7 @@ void printRecentTransactions(int count, string accNum) {
 		
 		i++;
 	}
+	return;
 }
 
 void refreshAccBal(string accNum) {
@@ -305,8 +388,38 @@ void refreshAccBal(string accNum) {
 			else if (tr.type == "WITHDRAW") bal -= tr.amount;
 		}
 	}
-	cout << bal << endl;
 	acs[accNum].balance = bal;
+	return;
 }
 
-void
+void depositAmtToAcc(float amt, string accNum) {
+	Transaction tr = Transaction();
+	tr.transId = genTransId();
+	tr.accNum = accNum;
+	tr.amount = amt;
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	ostringstream oss;
+	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
+	tr.datetime = oss.str();
+	tr.type = "DEPOSIT";
+	trs[tr.transId] = tr;
+	memSave("csv\\transactions.csv", "transactions");
+	return;
+}
+
+void withdrawAmtFromAcc(float amt, string accNum) {
+	Transaction tr = Transaction();
+	tr.transId = genTransId();
+	tr.accNum = accNum;
+	tr.amount = amt;
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	ostringstream oss;
+	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
+	tr.datetime = oss.str();
+	tr.type = "WITHDRAW";
+	trs[tr.transId] = tr;
+	memSave("csv\\transactions.csv", "transactions");
+	return;
+}

@@ -70,16 +70,13 @@ int main() {
 	memLoad("csv\\customers.csv", "customers");
 	memLoad("csv\\accounts.csv", "accounts");
 	memLoad("csv\\transactions.csv", "transactions");
-	memLoad("csv\\glbl_ctrs.csv", "global_counters");
+	memLoad("csv\\glbl_ctrs.csv", "glbl_ctrs");
 	
 	progLoop();
 	return 0;
 }
 
 void progLoop() {
-	cout << glbl_ctrs.at("TR");
-    return;
-    
 	srand(time(0));
 	
 	char inp;
@@ -98,6 +95,9 @@ void progLoop() {
 		cout << "Enter account number: ";
 		cin >> accNumInput;
 	
+		for (auto& x : accNumInput) {
+			x = toupper(x);
+		}
 		Account acc = fetchAccount(accNumInput);
 		if (acc.accNum == "") {
 			system("cls");
@@ -133,6 +133,7 @@ void viewAccount(Account acc) {
 		cout << "---------------\n";
 		cout << "Php " << fixed << setprecision(2) << acc.balance << endl;
 		cout << "\nMost Recent Transactions\n";
+		cout << "---------------\n";
 		printRecentTransactions(10, acc.accNum);
 		cout << "\nOptions\n";
 		cout << "---------------\n";
@@ -223,9 +224,10 @@ string genAccNum() {
 		
 		try {
 			trs.at(transId);
+			glbl_ctrs["AC"]++;
 		} catch (const out_of_range& e) {
 			glbl_ctrs["AC"]++;
-			memSave("csv\\glbl_ctrs.csv", "global_counters");
+			memSave("csv\\glbl_ctrs.csv", "glbl_ctrs");
 			return transId;
 		}
 	}
@@ -246,9 +248,10 @@ string genTransId() {
 		
 		try {
 			trs.at(transId);
+			glbl_ctrs["TR"]++;
 		} catch (const out_of_range& e) {
 			glbl_ctrs["TR"]++;
-			memSave("csv\\glbl_ctrs.csv", "global_counters");
+			memSave("csv\\glbl_ctrs.csv", "glbl_ctrs");
 			return transId;
 		}
 	}
@@ -351,10 +354,10 @@ void memLoad(string filepath, string mapName) {
 			tr.amount = stof(amountStr); 
 			trs[transId] = tr;
 		}
-	} else if (mapName == "global_counters") {
+	} else if (mapName == "glbl_ctrs") {
 		string code, c;
 		while (getline(ifs, code, ',')) {
-			getline(ifs, c, ',');
+			getline(ifs, c);
 			glbl_ctrs[code] = stoi(c);
 		}
 	}
@@ -389,6 +392,7 @@ void refreshAccBal(string accNum) {
 		}
 	}
 	acs[accNum].balance = bal;
+	memSave("csv\\accounts.csv", "accounts");
 	return;
 }
 

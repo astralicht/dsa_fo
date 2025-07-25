@@ -1,16 +1,11 @@
 /*
-
-To do list:
-- customer details not showing when checking account details
-
-*/
-
-/*
 CS105-1
 
 Julac Ontina
 Jericho Capistrano
 Ricoh Ng
+
+Please compile with C++20
 */
 
 #include <iostream>
@@ -18,7 +13,6 @@ Ricoh Ng
 #include <cstring>
 #include <cctype>
 #include <fstream>
-#include <conio.h>
 #include <random> 
 #include <string>   
 #include <iomanip>  
@@ -30,7 +24,6 @@ Ricoh Ng
 
 #define ASCII_ESC 27
 #define ASCII_ENTER 13
-#define ASCII_BACKSPACE 8
 
 using namespace std;
 
@@ -60,6 +53,9 @@ void printRecentTransactions(int count, string accNum);
 void refreshAccBal(string accNum);
 void depositAmtToAcc(float amt, string accNum);
 void withdrawAmtFromAcc(float amt, string accNum);
+void openAccount(Customer cs);
+void bankTransferOut(string destNum, float amt);
+void bankTransferIn(string destNum, float amt);
 
 map<string, Customer> css;
 map<string, Account> acs;
@@ -67,11 +63,10 @@ map<string, Transaction> trs;
 map<string, int> glbl_ctrs;
 
 int main() {
-	memLoad("csv\\customers.csv", "customers");
-	memLoad("csv\\accounts.csv", "accounts");
-	memLoad("csv\\transactions.csv", "transactions");
-	memLoad("csv\\glbl_ctrs.csv", "glbl_ctrs");
-	
+	memLoad("customers.txt", "customers");
+	memLoad("accounts.txt", "accounts");
+	memLoad("transactions.txt", "transactions");
+	memLoad("glbl_ctrs.txt", "glbl_ctrs");
 	progLoop();
 	return 0;
 }
@@ -79,36 +74,61 @@ int main() {
 void progLoop() {
 	srand(time(0));
 	
-	char inp;
+	string input;
 	string accNumInput;
-	
-	system("cls");
-	header();
-	cout << "Press any key to start";
-	inp = _getch();
+	bool errFlag = false;
 	
 	while(true) {
-		if(inp == ASCII_ESC) break;
-		
 		system("cls");
+		system("clear");
 		header();
-		cout << "Enter account number: ";
-		cin >> accNumInput;
-	
-		for (auto& x : accNumInput) {
-			x = toupper(x);
-		}
-		Account acc = fetchAccount(accNumInput);
-		if (acc.accNum == "") {
-			system("cls");
-			header();
-			cout << "Account not found!\n";
-			cout << "Press any key to continue";
-			_getch();
-			continue;
-		}
 		
-		viewAccount(acc);
+	 	cout << "MAIN MENU\n";
+	 	cout << "1. View Account\n";
+		cout << "2. Open New Account\n";
+	 	cout << "3. View Customer\n";
+	 	cout << "> ";
+	 	cin >> input;
+	 	
+	 	for (auto& x : input) x = toupper(x);
+	 	
+	 	if (input == "1") {
+			Account acc;
+	 		while (true) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) {
+					cout << "ERR: Account not found!\n";
+				}
+				cout << "Enter Account Number\n";
+				cout << "> ";
+				cin >> input;
+			
+				for (auto& x : input) x = toupper(x);
+				
+				acc = fetchAccount(input);
+				if (acc.accNum == "") {
+					errFlag = true;
+					continue;
+				} else break;
+			}
+			
+			errFlag = false;
+			viewAccount(acc);
+	    } else if (input == "2") {
+			system("cls");
+			system("clear");
+			header();
+			cout << "Existing customer? [y/n]\n";
+			cout << "> ";
+			cin >> input;
+			// if () {
+
+			// }
+		} else {
+			errFlag = false;	
+		}
 	}
 }
 
@@ -121,11 +141,13 @@ void header() {
 
 void viewAccount(Account acc) {
 	Customer cus = css[acc.cusNum];
-	char inp;
 	string input;
+	int errFlag = 0;
+	bool otherBankFlag = false;
 	
 	while (true) {
 		system("cls");
+		system("clear");
 		header();
 		cout << "Account Number: " << acc.accNum << endl;
 		cout << "Customer Name: " << cus.lname << ", " << cus.fname << " " << cus.mname << endl;
@@ -140,14 +162,23 @@ void viewAccount(Account acc) {
 		cout << "1. Deposit\n";
 		cout << "2. Withdraw\n";
 		cout << "3. Bank Transfer\n";
-		cout << "R. Refresh\n\n";
-		cout << "ESC to exit account";
-		inp = _getch();
-		if (inp == ASCII_ESC) break;
-		else if (inp == '1') {
+		cout << "R. Refresh\n";
+		cout << "0. to exit account\n";
+		cout << "> ";
+		cin >> input;
+		
+		for (auto& x : input) x = toupper(x);
+		
+		if (input == "0") break;
+		else if (input == "1") {
 			while (true) {
 				system("cls");
+				system("clear");
 				header();
+				if (errFlag == 1) {
+					cout << "ERR: Amount must be more than 0";
+					errFlag = 0;
+				}
 				cout << "Deposit\n";
 				cout << "'000' to cancel\n";
 				cout << "Enter amount: ";
@@ -156,23 +187,30 @@ void viewAccount(Account acc) {
 				
 				float amt = stof(input);
 				if (amt <= 0) {
-					cout << "\nAmount must be more than 0.\nPress any key to try again.\n";
-					_getch();
+					errFlag = 1;
 					continue;
 				} else {
 					system("cls");
+					system("clear");
 					header();
 					depositAmtToAcc(amt, acc.accNum);
 					cout << "An amount of Php " << setprecision(2) << amt << " was successfully deposited into the account.\n";
-					cout << "Press any key to return to account menu";
-					_getch();
+					cout << "Input any key to continue\n";
+					cout << "> ";
+					cin >> input;
+					errFlag = 0;
 					break;
 				}
 			}
-		} else if (tolower(inp) == '2') {
+		} else if (input == "2") {
 			while (true) {
 				system("cls");
+				system("clear");
 				header();
+				if (errFlag == 1) {
+					cout << "ERR: Amount cannot be more than the available balance\n";
+					errFlag = 0;
+				}
 				cout << "Withdraw\n";
 				cout << "'000' to cancel\n";
 				cout << "Enter amount: ";
@@ -181,20 +219,82 @@ void viewAccount(Account acc) {
 				
 				float amt = stof(input);
 				if (amt > acc.balance) {
-					cout << "\nAmount cannot be more than the available balance.\nPress any key to try again.\n";
-					_getch();
+					errFlag = 1;
 					continue;
 				} else {
 					system("cls");
+					system("clear");
 					header();
 					withdrawAmtFromAcc(amt, acc.accNum);
 					cout << "An amount of Php " << setprecision(2) << amt << " was successfully withdrawn from the account.\n";
-					cout << "Press any key to return to account menu";
-					_getch();
+					cout << "Input any key to continue\n";
+					cout << "> ";
+					cin >> input;
+					errFlag = 0;
 					break;
 				}
 			}
-		} else if (tolower(inp) == 'r') {
+		} else if (input == "3") {
+			float amt;
+			bool run = true;
+			while (run) {
+				system("cls");
+				system("clear");
+				header();
+				cout << "Bank Transfer\n";
+				cout << "'000' to cancel\n";
+				cout << "Funds transfer within the bank? [y/n]\n";
+				cout << "> ";
+				cin >> input;
+
+				for (auto& x : input) x = toupper(x);
+
+				if (input == "000") run = false;
+				else if (input == "N") {
+					otherBankFlag = true;
+					amt += 50;
+					break;
+				} else if (input == "Y") {
+					break;
+				}
+			}
+			errFlag = false;
+			while (run) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) cout << "No such account!\n";
+				cout << "'000' to cancel\n";
+				cout << "Enter account number\n";
+				cout << "> ";
+				cin >> input;
+
+				for (auto& x : input) x = toupper(x);
+
+				if (input == "000") run = false;
+				
+				Account ac = fetchAccount(input);
+				if (acc.accNum == "") {
+					errFlag = true;
+					continue;
+				}
+			}
+			errFlag = false;
+			while (run) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) cout << "No such account!\n";
+				cout << "'000' to cancel\n";
+				cout << "Enter account number\n";
+				cout << "> ";
+				cin >> input;
+
+				for (auto& x : input) x = toupper(x);
+
+				if (input == "000") run = false;
+			}
+		} else if (input == "R") {
 			refreshAccBal(acc.accNum);
 			acc = acs[acc.accNum];
 		} else continue;
@@ -209,6 +309,30 @@ Account fetchAccount(string accNum) {
 	else return Account(); 
 }
 
+string genCusNum() {
+	// customer number format: AC-YYYY-00000000
+	while (true) {
+		const auto now = chrono::system_clock::now();
+		time_t now_c = chrono::system_clock::to_time_t(now);
+		tm* ltm = localtime(&now_c);
+		string year = to_string(ltm->tm_year + 1900);
+		
+		ostringstream oss;
+		oss << right << setfill('0') << setw(8) << to_string(glbl_ctrs["CS"]);
+		
+		string num = "CS-" + year + "-" + oss.str();
+		
+		try {
+			css.at(num);
+			glbl_ctrs["CS"]++;
+		} catch (const out_of_range& e) {
+			glbl_ctrs["CS"]++;
+			memSave("glbl_ctrs.txt", "glbl_ctrs");
+			return num;
+		}
+	}
+}
+
 string genAccNum() {
 	// account number format: AC-YYYY-00000000
 	while (true) {
@@ -220,15 +344,15 @@ string genAccNum() {
 		ostringstream oss;
 		oss << right << setfill('0') << setw(8) << to_string(glbl_ctrs["AC"]);
 		
-		string transId = "AC-" + year + "-" + oss.str();
+		string num = "AC-" + year + "-" + oss.str();
 		
 		try {
-			trs.at(transId);
+			acs.at(num);
 			glbl_ctrs["AC"]++;
 		} catch (const out_of_range& e) {
 			glbl_ctrs["AC"]++;
-			memSave("csv\\glbl_ctrs.csv", "glbl_ctrs");
-			return transId;
+			memSave("glbl_ctrs.txt", "glbl_ctrs");
+			return num;
 		}
 	}
 }
@@ -244,29 +368,33 @@ string genTransId() {
 		ostringstream oss;
 		oss << right << setfill('0') << setw(8) << to_string(glbl_ctrs["TR"]);
 		
-		string transId = "TR-" + year + "-" + oss.str();
+		string num = "TR-" + year + "-" + oss.str();
 		
 		try {
-			trs.at(transId);
+			trs.at(num);
 			glbl_ctrs["TR"]++;
 		} catch (const out_of_range& e) {
 			glbl_ctrs["TR"]++;
-			memSave("csv\\glbl_ctrs.csv", "glbl_ctrs");
-			return transId;
+			memSave("glbl_ctrs.txt", "glbl_ctrs");
+			return num;
 		}
 	}
 }
 
 void memSave(string filepath, string tableName) {
     ofstream ofs(filepath);
+    string input;
 
     if (!ofs.is_open()) {
         system("cls");
+		system("clear");
         header();
         cout << "System error: Could not open " << filepath << " for writing!\n";
         cout << "Please contact the system administrator to resolve the issue.\n";
-        cout << "The program will exit now.";
-        _getch();
+        cout << "The program will exit now.\n";
+        cout << "Input any key to continue\n";
+		cout << "> ";
+		cin >> input;
         exit(0);
     }
 
@@ -312,11 +440,14 @@ void memLoad(string filepath, string mapName) {
 	
 	if (!ifs.is_open()) {
 		system("cls");
+		system("clear");
 		header();
 		cout << "System error!\n";
 		cout << "Please contact the system administrator to resolve the issue.\n";
-		cout << "The program will exit now.";
-		_getch();
+		cout << "The program will exit now.\n";
+		cout << "Input any key to continue\n";
+		cout << "> ";
+		cin >> line;
 		exit(0);
 	}
 	
@@ -387,12 +518,12 @@ void refreshAccBal(string accNum) {
 	for (const auto& pair : trs | views::reverse) {
 		tr = pair.second;
 		if (tr.accNum == accNum) {
-			if (tr.type == "DEPOSIT" || tr.type == "BANK TRANSFER") bal += tr.amount;
-			else if (tr.type == "WITHDRAW") bal -= tr.amount;
+			if (tr.type == "DEPOSIT" || tr.type == "BANK TRANSFER - IN") bal += tr.amount;
+			else if (tr.type == "WITHDRAW" || tr.type == "BANK TRANSFER - OUT") bal -= tr.amount;
 		}
 	}
 	acs[accNum].balance = bal;
-	memSave("csv\\accounts.csv", "accounts");
+	memSave("accounts.txt", "accounts");
 	return;
 }
 
@@ -408,7 +539,7 @@ void depositAmtToAcc(float amt, string accNum) {
 	tr.datetime = oss.str();
 	tr.type = "DEPOSIT";
 	trs[tr.transId] = tr;
-	memSave("csv\\transactions.csv", "transactions");
+	memSave("transactions.txt", "transactions");
 	return;
 }
 
@@ -424,6 +555,45 @@ void withdrawAmtFromAcc(float amt, string accNum) {
 	tr.datetime = oss.str();
 	tr.type = "WITHDRAW";
 	trs[tr.transId] = tr;
-	memSave("csv\\transactions.csv", "transactions");
+	memSave("transactions.txt", "transactions");
 	return;
+}
+
+void bankTransferOut(string destNum, float amt) {
+	Transaction tr = Transaction();
+	tr.transId = genTransId();
+	tr.accNum = destNum;
+	tr.amount = amt;
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	ostringstream oss;
+	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
+	tr.datetime = oss.str();
+	tr.type = "BANK TRANSFER - OUT";
+	trs[tr.transId] = tr;
+	memSave("transactions.txt", "transactions");
+	return;
+}
+
+void bankTransferIn(string origNum, float amt) {
+	Transaction tr = Transaction();
+	tr.transId = genTransId();
+	tr.accNum = origNum;
+	tr.amount = amt;
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+	ostringstream oss;
+	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
+	tr.datetime = oss.str();
+	tr.type = "BANK TRANSFER - IN";
+	trs[tr.transId] = tr;
+	memSave("transactions.txt", "transactions");
+	return;
+}
+
+void openAccount(Customer cs) {
+	Account ac = Account();
+	ac.accNum = genAccNum();
+	ac.cusNum = cs.cusNum;
+	acs[ac.accNum] = ac;
 }

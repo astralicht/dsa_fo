@@ -156,12 +156,13 @@ void viewAccount(Account acc) {
 		cout << "Php " << fixed << setprecision(2) << acc.balance << endl;
 		cout << "\nMost Recent Transactions\n";
 		cout << "---------------\n";
-		printRecentTransactions(10, acc.accNum);
+		printRecentTransactions(5, acc.accNum);
 		cout << "\nOptions\n";
 		cout << "---------------\n";
 		cout << "1. Deposit\n";
 		cout << "2. Withdraw\n";
 		cout << "3. Bank Transfer\n";
+		cout << "4. View All Transactions\n";
 		cout << "R. Refresh\n";
 		cout << "0. to exit account\n";
 		cout << "> ";
@@ -500,13 +501,11 @@ void printRecentTransactions(int count, string accNum) {
 	int i = 0;
 	Transaction tr;
 	for (const auto& pair : trs | views::reverse) {
-		if (i == count) break;
-		
+		if (i == count+1) break;
 		tr = pair.second;
 		if (tr.accNum == accNum) {
 			cout << tr.transId << " | " << tr.datetime << " | " << tr.type << " " << tr.amount << setprecision(2) << endl;
 		}
-		
 		i++;
 	}
 	return;

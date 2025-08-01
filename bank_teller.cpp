@@ -59,11 +59,17 @@ void bankTransferIn(string destNum, float amt);
 Customer fetchCustomer(string cusNum);
 string genAccNum();
 string genCusNum();
+float calcMonthlyInterest(float monthlySum, int timePeriod);
 
 map<string, Customer> css;
 map<string, Account> acs;
 map<string, Transaction> trs;
 map<string, int> glbl_ctrs;
+
+const string months[] = {
+	"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+	"JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
+};
 
 int main() {
 	memLoad("customers.txt", "customers");
@@ -305,6 +311,7 @@ void viewAccount(Account acc) {
 		cout << "2. Withdraw\n";
 		cout << "3. Bank Transfer\n";
 		cout << "4. View All Transactions\n";
+		cout << "5. Generate Report\n";
 		cout << "R. Refresh\n";
 		cout << "0. to exit account\n";
 		cout << "> ";
@@ -379,7 +386,7 @@ void viewAccount(Account acc) {
 			}
 		} else if (input == "3") {
 			float amt;
-			bool run = true;
+			string destNum;
 			while (true) {
 				system("cls");
 				system("clear");
@@ -415,10 +422,11 @@ void viewAccount(Account acc) {
 
 				for (auto& x : input) x = toupper(x);
 
-				if (input == "000" || otherBankFlag == true) break;
+				if (input == "000") break;
+				destNum = fetchAccount(input).accNum;
+				if (otherBankFlag == true) break;
 				
-				Account ac = fetchAccount(input);
-				if (acc.accNum == "") {
+				if (destNum == "") {
 					errFlag = true;
 					continue;
 				} else break;
@@ -437,9 +445,70 @@ void viewAccount(Account acc) {
 
 				if (input == "000") break;
 				else if (stof(input) < 0 || stof(input) > acc.balance) errFlag = true;
+
+				amt = stof(input);
 			}
 			errFlag = false;
 			if (input == "000") continue;
+			bankTransferOut(destNum, amt);
+		} else if (input == "4") {
+			system("cls");
+			system("clear");
+			header();
+			cout << "Transaction #\t | Account #\t | Datetime\t | Type\t | Amount\n";
+			for (pair pr : trs | views::reverse) {
+				Transaction tr = pr.second;
+				if (tr.accNum != acc.accNum) continue;
+				cout << tr.transId << "\t"
+					<< tr.accNum << "\t"
+					<< tr.datetime << "\t"
+					<< tr.type << "\t"
+					<< tr.amount << "\n";
+			}
+			cout << "\nInput any key to continue\n";
+			cout << "> ";
+			cin >> input;
+		} else if (input == "5") {
+			while (true) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) {
+					cout << "Please enter valid month\n";
+				}
+				cout << "Generate Report/Statement of Account\n";
+				cout << "Enter month\n";
+				cout << "'000' to cancel\n";
+				cout << "> ";
+				cin >> input;
+
+				if (input == "000") break;
+				if (stoi(input) < 1 || stoi(input) > 12) errFlag = true;
+				else break;
+			}
+			if (input == "000") continue;
+			int month = stoi(input);
+			errFlag = false;
+			while (true) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) {
+					cout << "Please enter valid year\n";
+				}
+				cout << "Generate Report/Statement of Account\n";
+				cout << "Enter year\n";
+				cout << "'000' to cancel\n";
+				cout << "> ";
+				cin >> input;
+
+				if (input == "000") break;
+				if (stoi(input) < 1900) errFlag = true;
+				else break;
+			}
+			if (input == "000") continue;
+			int year = stoi(input);
+			errFlag = false;
 		} else if (input == "R") {
 			refreshAccBal(acc.accNum);
 			acc = acs[acc.accNum];
@@ -724,21 +793,21 @@ void bankTransferOut(string destNum, float amt) {
 	return;
 }
 
-void bankTransferIn(string origNum, float amt) {
-	Transaction tr = Transaction();
-	tr.transId = genTransId();
-	tr.accNum = origNum;
-	tr.amount = amt;
-	time_t now = time(0);
-	tm* ltm = localtime(&now);
-	ostringstream oss;
-	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
-	tr.datetime = oss.str();
-	tr.type = "BANK TRANSFER - IN";
-	trs[tr.transId] = tr;
-	memSave("transactions.txt", "transactions");
-	return;
-}
+// void bankTransferIn(string origNum, float amt) {
+// 	Transaction tr = Transaction();
+// 	tr.transId = genTransId();
+// 	tr.accNum = origNum;
+// 	tr.amount = amt;
+// 	time_t now = time(0);
+// 	tm* ltm = localtime(&now);
+// 	ostringstream oss;
+// 	oss << put_time(ltm, "%m/%d/%Y %H:%M:%S");
+// 	tr.datetime = oss.str();
+// 	tr.type = "BANK TRANSFER - IN";
+// 	trs[tr.transId] = tr;
+// 	memSave("transactions.txt", "transactions");
+// 	return;
+// }
 
 void openAccount(Customer cs) {
 	Account ac = Account();
@@ -746,4 +815,71 @@ void openAccount(Customer cs) {
 	ac.cusNum = cs.cusNum;
 	acs[ac.accNum] = ac;
 	memSave("accounts.txt", "accounts");
+}
+
+float calcMonthlyInterest(float monSum) {
+	int daysPerMonth = 30;
+	float intRate = 0.04;
+	float withholdingTax = 0.2;
+	float adb = (monSum / daysPerMonth); // avergae daily balance
+	float monInt = adb * daysPerMonth * intRate;
+	return monInt - (withholdingTax * monInt);
+}
+
+void generateMonthlyReport(int month, int year, string accNum) {
+	float depositAmt, withdrawAmt, transferOutAmt, monthlySum, monthlyInterestAmt;
+	month--;
+
+	for (pair pr : trs) {
+		Transaction tr = pr.second;
+
+		if (tr.accNum != accNum) continue;
+
+		tm tm = {};
+		istringstream ss(tr.datetime);
+		ss >> get_time(&tm, "%m/%d/%Y");
+
+		if ((tm.tm_year + 1900) != year || (tm.tm_mon + 1) != month) continue;
+
+		if (tr.type == "DEPOSIT") depositAmt += tr.amount;
+		else if (tr.type == "WITHDRAW") withdrawAmt += tr.amount;
+		else if (tr.type == "BANK TRANSFER - OUT") transferOutAmt += tr.amount;
+	}
+
+	monthlySum += depositAmt - (withdrawAmt + transferOutAmt);
+	monthlyInterestAmt = calcMonthlyInterest(monthlySum);
+
+	// save to file; format: Report-mm-yyyy.txt
+	string filepath = "ACC-STATEMENT-" + months[month] + "-" + to_string(year) + ".txt";
+	ofstream ofs(filepath);
+	ofs << "Generated Report for " << months[month] << " of " << year << endl
+		<< "---------------\n"
+		<< "Deposits | Php " << depositAmt << endl
+		<< "Withdrawals | Php " << withdrawAmt << endl
+		<< "Bank Transfer - Out | Php " << transferOutAmt << endl
+		<< "---------------\n"
+		<< "Interest Earned | Php " << monthlyInterestAmt << endl
+		<< "---------------\n"
+		<< "Ending Balance for this month:\n"
+		<< "Php " << depositAmt - (withdrawAmt + transferOutAmt) + monthlyInterestAmt << endl;
+
+	system("cls");
+	system("clear");
+	header();
+	cout << "Generated Report for " << months[month] << " of " << year << endl;
+	cout << "---------------\n";
+	cout << "Deposits | Php " << depositAmt << endl;
+	cout << "Withdrawals | Php " << withdrawAmt << endl;
+	cout << "Bank Transfer - Out | Php " << transferOutAmt << endl;
+	cout << "---------------\n";
+	cout << "Interest Earned | Php " << monthlyInterestAmt << endl;
+	cout << "---------------\n";
+	cout << "Ending Balance for this month:\n";
+	cout << "Php " << depositAmt - (withdrawAmt + transferOutAmt) + monthlyInterestAmt << endl;
+	cout << "\nInput any key to go back to main menu\n";
+	cout << "> ";
+	string input;
+	cin >> input;
+
+	return;
 }

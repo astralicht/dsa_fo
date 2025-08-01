@@ -41,10 +41,10 @@ struct Transaction {
 	float amount;
 };
 
+
 void progLoop(); 
 void memLoad(string filename, string tableName);
 void memSave(string filename, string tableName); 
-string genAccNum(); 
 
 void header();
 void viewAccount(Account acc);
@@ -56,6 +56,9 @@ void withdrawAmtFromAcc(float amt, string accNum);
 void openAccount(Customer cs);
 void bankTransferOut(string destNum, float amt);
 void bankTransferIn(string destNum, float amt);
+Customer fetchCustomer(string cusNum);
+string genAccNum();
+string genCusNum();
 
 map<string, Customer> css;
 map<string, Account> acs;
@@ -82,11 +85,14 @@ void progLoop() {
 		system("cls");
 		system("clear");
 		header();
+
+		errFlag = false;
 		
 	 	cout << "MAIN MENU\n";
 	 	cout << "1. View Account\n";
 		cout << "2. Open New Account\n";
 	 	cout << "3. View Customer\n";
+		cout << "4. Create New Customer\n";
 	 	cout << "> ";
 	 	cin >> input;
 	 	
@@ -114,19 +120,155 @@ void progLoop() {
 				} else break;
 			}
 			
-			errFlag = false;
 			viewAccount(acc);
 	    } else if (input == "2") {
+			Customer cs;
+			while (true) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) {
+					cout << "ERR: Customer not found!\n";
+				}
+				cout << "Open New Account\n";
+				cout << "Enter customer number\n";
+				cout << "'000' to cancel\n";
+				cout << "> ";
+				cin >> input;
+				if (input == "000") break;
+				input = to_string(tolower(stoi(input)));
+				cs = fetchCustomer(input);
+				if (cs.cusNum == "") {
+					errFlag = true;
+					continue;
+				} else break;
+			}
+			
+			openAccount(cs);
+			
 			system("cls");
 			system("clear");
 			header();
-			cout << "Existing customer? [y/n]\n";
+			cout << "Successfully opened a new account for customer " << cs.cusNum << "!\n";
+			break;
+		} else if (input == "3") {
+			Customer cs;
+			while (true) {
+				system("cls");
+				system("clear");
+				header();
+				if (errFlag) {
+					cout << "ERR: Customer not found!\n";
+				}
+				cout << "View Customer Details\n";
+				cout << "Enter customer number\n";
+				cout << "'000' to cancel\n";
+				cout << "> ";
+				cin >> input;
+				if (input == "000") break;
+				input = to_string(tolower(stoi(input)));
+				cs = fetchCustomer(input);
+				if (cs.cusNum == "") {
+					errFlag = true;
+					continue;
+				} else break;
+			}
+			system("cls");
+			system("clear");
+			header();
+			cout << "Customer Details\n\n";
+			cout << "Customer #" << cs.cusNum << endl;
+			cout << "Name: " << cs.lname << ", " << cs.fname << " " << cs.mname << endl;
+			cout << "Email: " << cs.email << endl;
+			cout << "Phone Number: " << cs.phone_number << endl;
+			cout << "\nEnter any key to return to main menu\n";
 			cout << "> ";
 			cin >> input;
-			// if () {
+		} else if (input == "4") {
+			Customer cs;
 
-			// }
-		} else {
+			system("cls");
+			system("clear");
+			header();
+			cout << "Enter first name\n";
+			cout << "'000' to cancel\n";
+			cout << "> ";
+			cin >> input;
+			for (auto& x : input) x = toupper(x);
+			if (input == "000") return;
+			cs.fname = input;
+
+			system("cls");
+			system("clear");
+			header();
+			cout << "Enter middle name\n";
+			cout << "'000' to cancel\n";
+			cout << "> ";
+			cin >> input;
+			for (auto& x : input) x = toupper(x);
+			if (input == "000") return;
+			cs.mname = input;
+
+			system("cls");
+			system("clear");
+			header();
+			cout << "Enter last name\n";
+			cout << "'000' to cancel\n";
+			cout << "> ";
+			cin >> input;
+			for (auto& x : input) x = toupper(x);
+			if (input == "000") return;
+			cs.lname = input;
+
+			system("cls");
+			system("clear");
+			header();
+			cout << "Enter email\n";
+			cout << "'000' to cancel\n";
+			cout << "> ";
+			cin >> input;
+			for (auto& x : input) x = toupper(x);
+			if (input == "000") return;
+			cs.email = input;
+
+			while (true) {
+				system("cls");
+				system("clear");
+				header();
+				cout << "Enter phone number [+63] ";
+				cout << "'000' to cancel\n";
+				cin >> input;
+
+				if (input == "000") return;
+
+				if (input.length() == 10) {
+					bool validPhone = true;
+					for (size_t i = 0; i < input.length(); i++) {
+						if (!isdigit(input[i])) {
+							validPhone = false;
+							break;
+						}
+					}
+
+					if (validPhone) {
+						cs.phone_number = "+63" + cs.phone_number;
+						break;
+					} else {
+						cout << "Invalid phone number! Please ensure it is 10 digits long and contains only numbers." << endl;
+						continue;
+					}
+				}
+				else {
+					cout << "Invalid phone number length! It should be exactly 10 digits." << endl;
+					continue;
+				}
+			}
+
+			cs.cusNum = genCusNum();
+			css[cs.cusNum] = cs;
+			memSave("customers.txt", "customers");
+		}
+		else {
 			errFlag = false;	
 		}
 	}
@@ -238,19 +380,19 @@ void viewAccount(Account acc) {
 		} else if (input == "3") {
 			float amt;
 			bool run = true;
-			while (run) {
+			while (true) {
 				system("cls");
 				system("clear");
 				header();
 				cout << "Bank Transfer\n";
 				cout << "'000' to cancel\n";
-				cout << "Funds transfer within the bank? [y/n]\n";
+				cout << "Funds transfer same bank? [y/n]\n";
 				cout << "> ";
 				cin >> input;
 
 				for (auto& x : input) x = toupper(x);
 
-				if (input == "000") run = false;
+				if (input == "000") break;
 				else if (input == "N") {
 					otherBankFlag = true;
 					amt += 50;
@@ -260,7 +402,8 @@ void viewAccount(Account acc) {
 				}
 			}
 			errFlag = false;
-			while (run) {
+			if (input == "000") continue;
+			while (true) {
 				system("cls");
 				system("clear");
 				header();
@@ -272,29 +415,31 @@ void viewAccount(Account acc) {
 
 				for (auto& x : input) x = toupper(x);
 
-				if (input == "000") run = false;
+				if (input == "000" || otherBankFlag == true) break;
 				
 				Account ac = fetchAccount(input);
 				if (acc.accNum == "") {
 					errFlag = true;
 					continue;
-				}
+				} else break;
 			}
 			errFlag = false;
-			while (run) {
+			if (input == "000") continue;
+			while (true) {
 				system("cls");
 				system("clear");
 				header();
-				if (errFlag) cout << "No such account!\n";
+				if (errFlag) cout << "Amount cannot be negative or more than the available balance!\n";
 				cout << "'000' to cancel\n";
 				cout << "Enter account number\n";
 				cout << "> ";
 				cin >> input;
 
-				for (auto& x : input) x = toupper(x);
-
-				if (input == "000") run = false;
+				if (input == "000") break;
+				else if (stof(input) < 0 || stof(input) > acc.balance) errFlag = true;
 			}
+			errFlag = false;
+			if (input == "000") continue;
 		} else if (input == "R") {
 			refreshAccBal(acc.accNum);
 			acc = acs[acc.accNum];
@@ -308,6 +453,11 @@ void viewAccount(Account acc) {
 Account fetchAccount(string accNum) {
 	if (acs.count(accNum)) return acs[accNum];
 	else return Account(); 
+}
+
+Customer fetchCustomer(string cusNum) {
+	if (css.count(cusNum)) return css[cusNum];
+	else return Customer(); 
 }
 
 string genCusNum() {
@@ -595,4 +745,5 @@ void openAccount(Customer cs) {
 	ac.accNum = genAccNum();
 	ac.cusNum = cs.cusNum;
 	acs[ac.accNum] = ac;
+	memSave("accounts.txt", "accounts");
 }

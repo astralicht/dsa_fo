@@ -1,0 +1,10 @@
+Generated Report for JULY 2025
+---------------
+Deposits | Php 541.5
+Withdrawals | Php 100
+Bank Transfer - Out | Php 0.000000
+---------------
+Interest Earned | Php 14.128
+---------------
+Ending Balance for this month:
+Php 455.628

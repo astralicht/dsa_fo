@@ -157,7 +157,9 @@ void progLoop() {
 			system("clear");
 			header();
 			cout << "Successfully opened a new account for customer " << cs.cusNum << "!\n";
-			break;
+			cout << "Input any key to continue\n";
+			cin >> input;
+			continue;
 		} else if (input == "3") {
 			Customer cs;
 			while (true) {
@@ -894,7 +896,7 @@ void generateMonthlyReport(int month, int year, string accNum) {
 	cout << "\nInput any key to go back to main menu\n";
 	cout << "> ";
 
-	if (interestFlag == true) {
+	if (interestFlag == false) {
 		Transaction tr = Transaction();
 		tr.transId = genTransId();
 		tr.accNum = accNum;
@@ -902,7 +904,7 @@ void generateMonthlyReport(int month, int year, string accNum) {
 		tr.amount = monthlyInterestAmt;
 
 		ostringstream oss2;
-		oss2 << put_time(ltm, "%m_%d_%Y-%H_%M_%S");
+		oss2 << put_time(ltm, "%m/%d/%Y %H:%M:%S");
 		tr.datetime = oss.str();
 
 		trs[tr.transId] = tr;
